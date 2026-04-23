@@ -1,0 +1,64 @@
+{
+  "inventario": [
+    {
+      "id": "HW-001",
+      "tipo": "notebook",
+      "marca": "Lenovo",
+      "modelo": "ThinkPad E14",
+      "categoria": "hardware",
+      "stock": 12,
+      "precioUnitario": 1250000,
+      "ubicacion": "Deposito A",
+      "garantiaMeses": 24,
+      "estado": "activo"
+    },
+    {
+      "id": "HW-002",
+      "tipo": "monitor",
+      "marca": "Samsung",
+      "modelo": "Odyssey G5",
+      "categoria": "hardware",
+      "stock": 8,
+      "precioUnitario": 420000,
+      "ubicacion": "Laboratorio 1",
+      "garantiaMeses": 12,
+      "estado": "activo"
+    },
+    {
+      "id": "HW-003",
+      "tipo": "impresora",
+      "marca": "HP",
+      "modelo": "LaserJet Pro M404",
+      "categoria": "hardware",
+      "stock": 4,
+      "precioUnitario": 380000,
+      "ubicacion": "Administracion",
+      "garantiaMeses": 18,
+      "estado": "activo"
+    },
+    {
+      "id": "SW-001",
+      "tipo": "software",
+      "marca": "JetBrains",
+      "modelo": "IntelliJ IDEA Ultimate",
+      "categoria": "licencia",
+      "stock": 20,
+      "precioUnitario": 195000,
+      "ubicacion": "Licencias Digitales",
+      "garantiaMeses": 12,
+      "estado": "renovable"
+    },
+    {
+      "id": "SW-002",
+      "tipo": "software",
+      "marca": "Microsoft",
+      "modelo": "Windows 11 Pro",
+      "categoria": "licencia",
+      "stock": 30,
+      "precioUnitario": 145000,
+      "ubicacion": "Licencias Digitales",
+      "garantiaMeses": 12,
+      "estado": "activo"
+    }
+  ]
+}
