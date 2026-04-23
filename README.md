@@ -1,37 +1,38 @@
 # ssdd-practicarpc
 
-Resolución del práctico de **Sistemas Distribuidos — Invocación Remota / RPC**.
+Resolución del práctico de **Sistemas Distribuidos — Invocación Remota / RPC** organizada **según el enunciado**.
 
 ## Estructura principal
 
-- `invocacion-remota00.pdf` — teoría base de invocación remota
-- `invocacion-remota01.pdf` — teoría base de RPC
-- `practicorpc/Práctico_RPC_2026.md` — enunciado del práctico
-- `practicorpc/RESOLUCION_COMPLETA.md` — resolución consolidada
+- `practicorpc/00-enunciado-y-fuentes/` — enunciado y PDFs base
+- `practicorpc/01-invocacion-remota-rpc/` — ejercicios 1 al 9
+- `practicorpc/02-json/` — ejercicios 10 al 15
+- `practicorpc/03-programacion-rpc/` — Programación RPC clásica
+- `practicorpc/04-java-rmi/` — práctico Java RMI
+- `practicorpc/05-grpc/` — práctico gRPC
+- `practicorpc/99-resumen-general/` — índice general y resumen
 
-### Entregables por tema
+## Criterio de organización
 
-- `practicorpc/sockets/` — ejercicio cliente/servidor con sockets
-- `practicorpc/json/` — JSON, parse/stringify y validación
-- `practicorpc/protobuf/` — archivos `.proto`, validación Python y generados `_pb2.py`
-- `practicorpc/rpc/` — contratos y clientes base para Sun RPC / `rpcgen`
-- `practicorpc/java-rmi/` — ejercicios resueltos en Java RMI
-- `practicorpc/grpc/` — ejercicios resueltos en gRPC
-- `practicorpc/python-rpc-rpyc/` — ejercicios RPC en Python con RPyC
+Cada carpeta sigue el orden del práctico:
+
+- número o inciso del enunciado
+- archivos de código asociados
+- `respuesta.md`, `analisis.md` o `README.md` cuando corresponde
 
 ## Validaciones realizadas
 
 - JSON validado localmente con Node.js.
 - Protobuf validado con Python + `grpcio-tools`.
+- Módulos `_pb2.py` generados para Python.
 - Lógica del ejercicio de sockets probada localmente.
 
 ## Nota importante del entorno
 
-Este repo fue preparado en Windows y **no** tenía instalados globalmente `rpcgen`, `rpcinfo` ni `protoc`.
+Este repo fue preparado en Windows y no tenía instalados globalmente `rpcgen`, `rpcinfo` ni `protoc`.
 
 Por eso:
 
-- para Protobuf se usa `.venv` + `grpcio-tools`
-- para Sun RPC quedaron fuentes e instrucciones listas para correr en Linux
-- para gRPC quedaron `proto`, clientes/servidores e instrucciones de generación
-
+- Protobuf se resuelve con `.venv` + `grpcio-tools`.
+- Sun RPC quedó listo para correr en Linux con `rpcgen`.
+- gRPC quedó preparado con `proto`, server y client, además de instrucciones de generación.

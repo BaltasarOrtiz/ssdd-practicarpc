@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package ssdd.practicarpc.protobuf;
+
+message InventoryItem {
+  string id = 1;
+  string tipo = 2;
+  string marca = 3;
+  string modelo = 4;
+  string categoria = 5;
+  int32 stock = 6;
+  double precio_unitario = 7;
+  string ubicacion = 8;
+  int32 garantia_meses = 9;
+  string estado = 10;
+}
+
+message InventoryCatalog {
+  repeated InventoryItem inventario = 1;
+}
