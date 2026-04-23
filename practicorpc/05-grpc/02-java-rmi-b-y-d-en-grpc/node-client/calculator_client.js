@@ -15,7 +15,7 @@ const packageDefinition = protoLoader.loadSync(
 );
 
 const proto = grpc.loadPackageDefinition(packageDefinition).ssdd.practicarpc.grpc;
-const client = new proto.CalculatorService("localhost:50051", grpc.credentials.createInsecure());
+const client = new proto.CalculatorService("localhost:50050", grpc.credentials.createInsecure());
 
 const rl = readline.createInterface({
   input: process.stdin,

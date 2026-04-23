@@ -1,0 +1,19 @@
+{
+  "name": "ssdd-practicarpc-tui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TUI para verificar, instalar y ejecutar la parte práctica de ssdd-practicarpc en Ubuntu/Debian",
+  "bin": {
+    "practicorpc-tui": "./cli.js"
+  },
+  "scripts": {
+    "start": "node cli.js",
+    "check": "node --check cli.js && node --check src/app.js && node --check src/config.js && node --check src/dependencies.js && node --check src/exercises.js && node --check src/runner.js && node --check src/utils.js"
+  },
+  "dependencies": {
+    "@inkjs/ui": "^2.0.0",
+    "ink": "^5.2.1",
+    "react": "^18.3.1"
+  }
+}
