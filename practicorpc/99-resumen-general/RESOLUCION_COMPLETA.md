@@ -10,6 +10,7 @@ Ahora la resolución está segmentada **1:1 según el enunciado del práctico**.
 - `../03-programacion-rpc/` → Programación RPC clásica
 - `../04-java-rmi/` → Práctico Java RMI
 - `../05-grpc/` → gRPC
+- `../98-tui-practica/` → TUI para preparar y ejecutar la parte práctica
 
 ## Idea de lectura
 

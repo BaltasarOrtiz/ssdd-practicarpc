@@ -47,6 +47,56 @@ function buildPrintf(values) {
   return `printf ${shEscape(format)} ${args}`;
 }
 
+function buildGrpcCalculatorNodeCommand({operation, op1, op2}) {
+  const methodByOperation = {
+    sum: 'Sum',
+    subtract: 'Subtract',
+    divide: 'Divide',
+    multiply: 'Multiply'
+  };
+
+  const source = `
+const path = require('node:path');
+const grpc = require('@grpc/grpc-js');
+const protoLoader = require('@grpc/proto-loader');
+const def = protoLoader.loadSync(path.join('..', 'protos', 'calculator.proto'), { keepCase: true, longs: String, enums: String, defaults: true, oneofs: true });
+const proto = grpc.loadPackageDefinition(def).ssdd.practicarpc.grpc;
+const client = new proto.CalculatorService('localhost:50051', grpc.credentials.createInsecure());
+client.${methodByOperation[operation]}({ op1: ${Number(op1)}, op2: ${Number(op2)} }, (error, response) => {
+  if (error) {
+    console.error(error.message);
+    process.exit(1);
+  }
+  console.log('Resultado:', response.result);
+  process.exit(0);
+});
+`;
+
+  return `node -e ${shEscape(source)}`;
+}
+
+function buildGrpcSeasonNodeCommand({day, month}) {
+  const source = `
+const path = require('node:path');
+const grpc = require('@grpc/grpc-js');
+const protoLoader = require('@grpc/proto-loader');
+const def = protoLoader.loadSync(path.join('..', 'protos', 'season.proto'), { keepCase: true, longs: String, enums: String, defaults: true, oneofs: true });
+const proto = grpc.loadPackageDefinition(def).ssdd.practicarpc.grpc;
+const client = new proto.SeasonService('localhost:50052', grpc.credentials.createInsecure());
+client.GetSeason({ day: ${Number(day)}, month: ${Number(month)} }, (error, response) => {
+  if (error) {
+    console.error(error.message);
+    process.exit(1);
+  }
+  console.log('Estación:', response.season);
+  console.log('Mensaje:', response.message);
+  process.exit(0);
+});
+`;
+
+  return `node -e ${shEscape(source)}`;
+}
+
 async function compileOrFail(command, cwd, title) {
   const result = await runCapturedCommand(command, {cwd});
   if (result.success) {
@@ -429,7 +479,7 @@ export const exercises = [
         },
         client: {
           cwd: NODE_CLIENT_DIR,
-          command: `${buildPrintf([values.operation, String(values.op1), String(values.op2)])} | node calculator_client.js`
+          command: buildGrpcCalculatorNodeCommand(values)
         }
       });
     }
@@ -458,7 +508,7 @@ export const exercises = [
         },
         client: {
           cwd: NODE_CLIENT_DIR,
-          command: `${buildPrintf([String(values.day), String(values.month)])} | node season_client.js`
+          command: buildGrpcSeasonNodeCommand(values)
         }
       });
     }

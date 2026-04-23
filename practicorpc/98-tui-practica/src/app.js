@@ -9,7 +9,7 @@ import {normalizeInteger, truncateOutput} from './utils.js';
 
 const h = React.createElement;
 
-function useMenuNavigation(items, onSelect, {onBack, isActive = true} = {}) {
+function useMenuNavigation(items, onSelect, {onBack, onQuit, isActive = true} = {}) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -34,6 +34,11 @@ function useMenuNavigation(items, onSelect, {onBack, isActive = true} = {}) {
 
       if (key.return) {
         onSelect(items[index], index);
+        return;
+      }
+
+      if (input === 'q' && onQuit) {
+        onQuit();
         return;
       }
 
@@ -92,8 +97,8 @@ function SummaryBox({title, lines}) {
   ]);
 }
 
-function MainScreen({lastDependencySummary, lastResult, onSelect}) {
-  const index = useMenuNavigation(mainMenuItems, onSelect, {isActive: true});
+function MainScreen({lastDependencySummary, lastResult, onQuit, onSelect}) {
+  const index = useMenuNavigation(mainMenuItems, onSelect, {isActive: true, onQuit});
 
   const summaryLines = lastDependencySummary
     ? [`Estado: ${lastDependencySummary.okCount}/${lastDependencySummary.total} checks en verde.`]
@@ -114,7 +119,7 @@ function MainScreen({lastDependencySummary, lastResult, onSelect}) {
   ]);
 }
 
-function DependencyScreen({onBack, onRefreshDone}) {
+function DependencyScreen({onBack, onQuit, onRefreshDone}) {
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
   const actions = useMemo(
@@ -147,7 +152,7 @@ function DependencyScreen({onBack, onRefreshDone}) {
 
       onBack();
     },
-    {onBack, isActive: !loading}
+    {onBack, onQuit, isActive: !loading}
   );
 
   if (loading) {
@@ -177,8 +182,8 @@ function DependencyScreen({onBack, onRefreshDone}) {
   ]);
 }
 
-function InstallScreen({onBack, onSelect}) {
-  const index = useMenuNavigation(installActions, onSelect, {onBack});
+function InstallScreen({onBack, onQuit, onSelect}) {
+  const index = useMenuNavigation(installActions, onSelect, {onBack, onQuit});
 
   return h(Frame, {
     title: 'Instalar / preparar entorno',
@@ -187,8 +192,8 @@ function InstallScreen({onBack, onSelect}) {
   }, [h(MenuList, {key: 'menu', items: installActions, index})]);
 }
 
-function CategoryScreen({onBack, onSelect}) {
-  const index = useMenuNavigation(exerciseCategories, onSelect, {onBack});
+function CategoryScreen({onBack, onQuit, onSelect}) {
+  const index = useMenuNavigation(exerciseCategories, onSelect, {onBack, onQuit});
 
   return h(Frame, {
     title: 'Ejecutar incisos prácticos',
@@ -197,10 +202,10 @@ function CategoryScreen({onBack, onSelect}) {
   }, [h(MenuList, {key: 'menu', items: exerciseCategories, index})]);
 }
 
-function ExerciseScreen({categoryId, onBack, onSelect}) {
+function ExerciseScreen({categoryId, onBack, onQuit, onSelect}) {
   const items = listExercisesByCategory(categoryId);
   const category = exerciseCategories.find(item => item.id === categoryId);
-  const index = useMenuNavigation(items, onSelect, {onBack});
+  const index = useMenuNavigation(items, onSelect, {onBack, onQuit});
 
   return h(Frame, {
     title: category?.label ?? 'Ejercicios',
@@ -284,7 +289,7 @@ function RunningScreen({label}) {
   }, [h(Spinner, {key: 'spinner', label})]);
 }
 
-function ResultScreen({result, onBack, onRetry}) {
+function ResultScreen({result, onBack, onQuit, onRetry}) {
   const actions = [
     {id: 'retry', label: 'Repetir', description: 'Vuelve a ejecutar la misma acción.'},
     {id: 'back', label: 'Volver', description: 'Regresa a la pantalla anterior.'}
@@ -299,7 +304,7 @@ function ResultScreen({result, onBack, onRetry}) {
 
       onBack();
     },
-    {onBack}
+    {onBack, onQuit}
   );
 
   return h(Frame, {
@@ -316,10 +321,15 @@ function ResultScreen({result, onBack, onRetry}) {
   ]);
 }
 
-function AboutScreen({onBack}) {
+function AboutScreen({onBack, onQuit}) {
   const lines = getAboutText().split('\n');
 
   useInput((input, key) => {
+    if (input === 'q') {
+      onQuit();
+      return;
+    }
+
     if (key.escape || key.return || input === 'b') {
       onBack();
     }
@@ -336,7 +346,7 @@ function AboutScreen({onBack}) {
 
 export function App() {
   const {exit} = useApp();
-  const {setRawMode} = useStdin();
+  const {setRawMode, isRawModeSupported} = useStdin();
   const [stack, setStack] = useState([{type: 'main'}]);
   const [lastDependencySummary, setLastDependencySummary] = useState(null);
   const [lastResult, setLastResult] = useState(null);
@@ -392,10 +402,23 @@ export function App() {
     replace({type: 'result', result: finalResult});
   };
 
+  if (!isRawModeSupported) {
+    return h(Frame, {
+      title: appInfo.title,
+      subtitle: 'Modo no interactivo detectado',
+      footer: 'Ejecutá esta TUI en una terminal real (TTY).'
+    }, [
+      h(Text, {key: 'line-1', color: 'yellow'}, 'Ink no puede activar raw mode en este stdin.'),
+      h(Text, {key: 'line-2'}, 'Eso pasa cuando corrés la app sin TTY, por ejemplo redirigiendo entrada/salida o desde algunos runners automatizados.'),
+      h(Text, {key: 'line-3'}, `Probá en una terminal normal con: cd practicorpc/98-tui-practica && npm start`)
+    ]);
+  }
+
   if (screen.type === 'main') {
     return h(MainScreen, {
       lastDependencySummary,
       lastResult,
+      onQuit: exit,
       onSelect: item => {
         if (item.id === 'dependencies') {
           push({type: 'dependencies'});
@@ -425,6 +448,7 @@ export function App() {
   if (screen.type === 'dependencies') {
     return h(DependencyScreen, {
       onBack: pop,
+      onQuit: exit,
       onRefreshDone: setLastDependencySummary
     });
   }
@@ -432,6 +456,7 @@ export function App() {
   if (screen.type === 'install') {
     return h(InstallScreen, {
       onBack: pop,
+      onQuit: exit,
       onSelect: action => push({type: 'confirm-install', action})
     });
   }
@@ -448,6 +473,7 @@ export function App() {
   if (screen.type === 'categories') {
     return h(CategoryScreen, {
       onBack: pop,
+      onQuit: exit,
       onSelect: category => push({type: 'exercise-list', categoryId: category.id})
     });
   }
@@ -456,6 +482,7 @@ export function App() {
     return h(ExerciseScreen, {
       categoryId: screen.categoryId,
       onBack: pop,
+      onQuit: exit,
       onSelect: exercise => {
         if (exercise.prompts?.length) {
           push({type: 'prompt', exercise});
@@ -484,6 +511,7 @@ export function App() {
     return h(ResultScreen, {
       result: screen.result,
       onBack: pop,
+      onQuit: exit,
       onRetry: () => {
         const retry = screen.result.retry;
         if (retry.kind === 'install') {
@@ -496,5 +524,5 @@ export function App() {
     });
   }
 
-  return h(AboutScreen, {onBack: pop});
+  return h(AboutScreen, {onBack: pop, onQuit: exit});
 }

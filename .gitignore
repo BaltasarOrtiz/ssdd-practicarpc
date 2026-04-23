@@ -24,3 +24,9 @@ Thumbs.db
 
 # Local automation / agent artifacts
 .atl/
+
+# Sun RPC compiled binaries
+practicorpc/03-programacion-rpc/a-par-o-impar/paridad_server
+practicorpc/03-programacion-rpc/a-par-o-impar/paridad_client
+practicorpc/03-programacion-rpc/b-calculadora/calculadora_server
+practicorpc/03-programacion-rpc/b-calculadora/calculadora_client

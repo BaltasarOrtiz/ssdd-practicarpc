@@ -2,6 +2,22 @@
 
 Este archivo deja los **comandos exactos** que sí funcionaron en este entorno para ejecutar los incisos prácticos del trabajo.
 
+## Alternativa interactiva
+
+Si preferís no correr todo a mano, existe una TUI en:
+
+```bash
+practicorpc/98-tui-practica/
+```
+
+Uso:
+
+```bash
+cd practicorpc/98-tui-practica
+npm install
+npm start
+```
+
 ## Requisitos del entorno
 
 - Java 21+

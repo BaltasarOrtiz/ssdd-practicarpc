@@ -10,6 +10,7 @@ Resolución del práctico de **Sistemas Distribuidos — Invocación Remota / RP
 - `practicorpc/03-programacion-rpc/` — Programación RPC clásica
 - `practicorpc/04-java-rmi/` — práctico Java RMI
 - `practicorpc/05-grpc/` — práctico gRPC
+- `practicorpc/98-tui-practica/` — TUI para preparar y ejecutar la parte práctica
 - `practicorpc/99-resumen-general/` — índice general y resumen
 
 ## Criterio de organización

@@ -5,7 +5,7 @@ import java.util.Scanner;
 
 public class CalculatorClient {
     public static void main(String[] args) throws Exception {
-        String host = (args.length > 0) ? args[0] : "localhost";
+        String host = (args.length > 0) ? args[0] : "10.0.6.203";
         CalculatorService service = (CalculatorService) Naming.lookup("rmi://" + host + "/CalculatorService");
 
         try (Scanner scanner = new Scanner(System.in)) {
