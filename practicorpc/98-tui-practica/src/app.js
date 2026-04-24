@@ -360,6 +360,22 @@ function RunningScreen({label}) {
   ]);
 }
 
+// Static screen for terminal-mode actions (sudo, apt, etc.).
+// Deliberately no Spinner — Ink must stay idle so the child process
+// has uncontested access to the TTY (password prompts, interactive output).
+function TerminalRunningScreen({label}) {
+  return h(Frame, {
+    title: 'Ejecutando en terminal...',
+    subtitle: label,
+    footer: 'Esperá a que termine. La salida aparece debajo de este mensaje.'
+  }, [
+    h(Box, {key: 'msg', marginTop: 1, paddingX: 1}, [
+      h(Text, {key: 't', color: 'yellowBright', bold: true},
+        '  Comando en ejecución — si pide contraseña, escribila abajo.')
+    ])
+  ]);
+}
+
 function ResultScreen({result, onBack, onQuit, onRetry}) {
   const actions = [
     {id: 'retry', label: 'Repetir', description: 'Vuelve a ejecutar la misma acción.'},
@@ -466,7 +482,10 @@ export function App() {
   const pop = () => setStack(current => (current.length > 1 ? current.slice(0, -1) : current));
 
   const executeInstall = async action => {
-    replace({type: 'running', label: action.label});
+    replace({
+      type: action.mode === 'terminal' ? 'terminal-running' : 'running',
+      label: action.label
+    });
     const result = action.mode === 'terminal'
       ? await runTerminalCommand(action.command, {cwd: action.cwd, setRawMode})
       : await runCapturedCommand(action.command, {cwd: action.cwd});
@@ -612,6 +631,10 @@ export function App() {
 
   if (screen.type === 'running') {
     return h(RunningScreen, {label: screen.label});
+  }
+
+  if (screen.type === 'terminal-running') {
+    return h(TerminalRunningScreen, {label: screen.label});
   }
 
   if (screen.type === 'result') {

@@ -73,6 +73,10 @@ export async function runTerminalCommand(command, {cwd, env = {}, setRawMode} = 
     setRawMode(false);
   }
 
+  // Pause Node.js stdin polling so the child process gets exclusive TTY access.
+  // Without this, Node.js and the child compete for fd 0 and sudo can't read passwords.
+  process.stdin.pause();
+
   try {
     return await new Promise(resolve => {
       const child = spawnBash(command, {cwd, env, stdio: 'inherit'});
@@ -102,6 +106,7 @@ export async function runTerminalCommand(command, {cwd, env = {}, setRawMode} = 
       });
     });
   } finally {
+    process.stdin.resume();
     if (typeof setRawMode === 'function') {
       setRawMode(true);
     }
