@@ -126,11 +126,7 @@ export async function collectDependencyStatuses() {
   }
 
   const okCount = items.filter(item => item.ok).length;
-  return {
-    okCount,
-    total: items.length,
-    items
-  };
+  return {okCount, total: items.length, items};
 }
 
 export const installActions = [

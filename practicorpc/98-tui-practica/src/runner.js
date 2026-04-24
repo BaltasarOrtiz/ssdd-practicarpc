@@ -14,12 +14,33 @@ function spawnBash(command, {cwd, env = {}, detached = false, stdio = ['ignore',
   });
 }
 
+function makeErrorResult(error) {
+  return {
+    success: false,
+    code: -1,
+    signal: null,
+    stdout: '',
+    stderr: error.message,
+    output: `Error al lanzar el comando: ${error.message}`
+  };
+}
+
 export async function runCapturedCommand(command, {cwd, env = {}} = {}) {
   return new Promise(resolve => {
     const child = spawnBash(command, {cwd, env});
 
     let stdout = '';
     let stderr = '';
+    let settled = false;
+
+    child.on('error', error => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      resolve(makeErrorResult(error));
+    });
 
     child.stdout?.on('data', chunk => {
       stdout += chunk.toString();
@@ -30,6 +51,11 @@ export async function runCapturedCommand(command, {cwd, env = {}} = {}) {
     });
 
     child.on('close', (code, signal) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
       resolve({
         success: code === 0,
         code: code ?? -1,
@@ -50,7 +76,23 @@ export async function runTerminalCommand(command, {cwd, env = {}, setRawMode} = 
   try {
     return await new Promise(resolve => {
       const child = spawnBash(command, {cwd, env, stdio: 'inherit'});
+      let settled = false;
+
+      child.on('error', error => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        resolve(makeErrorResult(error));
+      });
+
       child.on('close', (code, signal) => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
         resolve({
           success: code === 0,
           code: code ?? -1,
@@ -86,98 +128,132 @@ function killDetachedProcess(child) {
   }, 1200);
 }
 
-export async function runServerClientRecipe({
-  title,
-  server,
-  client,
-  waitMs = 1600
-}) {
-  const serverChild = spawnBash(server.command, {
-    cwd: server.cwd,
-    env: server.env,
-    detached: true
+export async function runServerClientRecipe({title, server, client, waitMs = 1600}) {
+  return new Promise(resolve => {
+    const serverChild = spawnBash(server.command, {
+      cwd: server.cwd,
+      env: server.env,
+      detached: true
+    });
+
+    let serverStdout = '';
+    let serverStderr = '';
+    let serverExit = null;
+    let settled = false;
+
+    serverChild.on('error', error => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      resolve({success: false, output: section('Error servidor', makeErrorResult(error).output)});
+    });
+
+    serverChild.stdout?.on('data', chunk => {
+      serverStdout += chunk.toString();
+    });
+
+    serverChild.stderr?.on('data', chunk => {
+      serverStderr += chunk.toString();
+    });
+
+    serverChild.on('close', (code, signal) => {
+      serverExit = {code, signal};
+    });
+
+    sleep(waitMs).then(async () => {
+      if (settled) {
+        return;
+      }
+
+      if (serverExit && serverExit.code !== 0) {
+        settled = true;
+        resolve({
+          success: false,
+          output: [
+            section('Servidor', truncateOutput([serverStdout, serverStderr].join('\n'))),
+            section('Error', `${title}: el servidor terminó antes de ejecutar el cliente.`)
+          ].join('\n\n')
+        });
+        return;
+      }
+
+      const clientResult = await runCapturedCommand(client.command, {
+        cwd: client.cwd,
+        env: client.env
+      });
+
+      killDetachedProcess(serverChild);
+      settled = true;
+      resolve({
+        success: clientResult.success,
+        output: [
+          section('Cliente', truncateOutput(clientResult.output)),
+          section('Servidor', truncateOutput([serverStdout, serverStderr].join('\n')))
+        ].join('\n\n')
+      });
+    });
   });
-
-  let serverStdout = '';
-  let serverStderr = '';
-  let serverExit = null;
-
-  serverChild.stdout?.on('data', chunk => {
-    serverStdout += chunk.toString();
-  });
-
-  serverChild.stderr?.on('data', chunk => {
-    serverStderr += chunk.toString();
-  });
-
-  serverChild.on('close', (code, signal) => {
-    serverExit = {code, signal};
-  });
-
-  await sleep(waitMs);
-
-  if (serverExit && serverExit.code !== 0) {
-    return {
-      success: false,
-      output: [
-        section('Servidor', truncateOutput([serverStdout, serverStderr].join('\n'))),
-        section('Error', `${title}: el servidor terminó antes de ejecutar el cliente.`)
-      ].join('\n\n')
-    };
-  }
-
-  const clientResult = await runCapturedCommand(client.command, {
-    cwd: client.cwd,
-    env: client.env
-  });
-
-  killDetachedProcess(serverChild);
-
-  return {
-    success: clientResult.success,
-    output: [
-      section('Cliente', truncateOutput(clientResult.output)),
-      section('Servidor', truncateOutput([serverStdout, serverStderr].join('\n')))
-    ].join('\n\n')
-  };
 }
 
 export async function runFailureRecipe({title, server, client, killAfterMs = 1000, startupWaitMs = 1600}) {
-  const serverChild = spawnBash(server.command, {
-    cwd: server.cwd,
-    env: server.env,
-    detached: true
+  return new Promise(resolve => {
+    const serverChild = spawnBash(server.command, {
+      cwd: server.cwd,
+      env: server.env,
+      detached: true
+    });
+
+    let serverStdout = '';
+    let serverStderr = '';
+    let settled = false;
+
+    serverChild.on('error', error => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      resolve({success: false, output: section('Error servidor', makeErrorResult(error).output)});
+    });
+
+    serverChild.stdout?.on('data', chunk => {
+      serverStdout += chunk.toString();
+    });
+
+    serverChild.stderr?.on('data', chunk => {
+      serverStderr += chunk.toString();
+    });
+
+    sleep(startupWaitMs).then(async () => {
+      if (settled) {
+        return;
+      }
+
+      const clientPromise = runCapturedCommand(client.command, {
+        cwd: client.cwd,
+        env: client.env
+      });
+
+      await sleep(killAfterMs);
+      killDetachedProcess(serverChild);
+
+      const clientResult = await clientPromise;
+
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      resolve({
+        success: clientResult.success,
+        output: [
+          section('Cliente', truncateOutput(clientResult.output)),
+          section('Servidor', truncateOutput([serverStdout, serverStderr].join('\n'))),
+          section('Observación', `${title}: se forzó la caída del servidor durante la invocación.`)
+        ].join('\n\n')
+      });
+    });
   });
-
-  let serverStdout = '';
-  let serverStderr = '';
-
-  serverChild.stdout?.on('data', chunk => {
-    serverStdout += chunk.toString();
-  });
-
-  serverChild.stderr?.on('data', chunk => {
-    serverStderr += chunk.toString();
-  });
-
-  await sleep(startupWaitMs);
-
-  const clientPromise = runCapturedCommand(client.command, {
-    cwd: client.cwd,
-    env: client.env
-  });
-
-  await sleep(killAfterMs);
-  killDetachedProcess(serverChild);
-
-  const clientResult = await clientPromise;
-
-  return {
-    success: clientResult.success,
-    output: [
-      section('Cliente', truncateOutput(clientResult.output)),
-      section('Servidor', truncateOutput([serverStdout, serverStderr].join('\n'))),
-      section('Observación', `${title}: se forzó la caída del servidor durante la invocación.`)
-    ].join('\n\n')
-  };
 }

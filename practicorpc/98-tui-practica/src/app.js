@@ -9,6 +9,8 @@ import {normalizeInteger, truncateOutput} from './utils.js';
 
 const h = React.createElement;
 
+// ─── navigation hook ────────────────────────────────────────────────────────
+
 function useMenuNavigation(items, onSelect, {onBack, onQuit, isActive = true} = {}) {
   const [index, setIndex] = useState(0);
 
@@ -22,12 +24,12 @@ function useMenuNavigation(items, onSelect, {onBack, onQuit, isActive = true} = 
         return;
       }
 
-      if (key.upArrow) {
+      if (key.upArrow || input === 'k') {
         setIndex(current => (current - 1 + items.length) % items.length);
         return;
       }
 
-      if (key.downArrow) {
+      if (key.downArrow || input === 'j') {
         setIndex(current => (current + 1) % items.length);
         return;
       }
@@ -52,70 +54,115 @@ function useMenuNavigation(items, onSelect, {onBack, onQuit, isActive = true} = 
   return index;
 }
 
-function Frame({title, subtitle, children, footer}) {
-  return h(Box, {flexDirection: 'column', padding: 1}, [
-    h(Box, {key: 'header', flexDirection: 'column', marginBottom: 1}, [
-      h(Text, {key: 'title', bold: true, color: 'cyan'}, title),
-      subtitle ? h(Text, {key: 'subtitle', dimColor: true}, subtitle) : null
-    ]),
-    h(Box, {key: 'body', flexDirection: 'column'}, children),
-    footer
-      ? h(Box, {key: 'footer', marginTop: 1, flexDirection: 'column'}, [
-          h(Text, {key: 'footer-text', dimColor: true}, footer)
-        ])
+// ─── shared primitives ───────────────────────────────────────────────────────
+
+function Header({title, subtitle}) {
+  return h(Box, {flexDirection: 'column', marginBottom: 1}, [
+    h(Text, {key: 'title', bold: true, color: 'cyanBright'}, `◆  ${title}`),
+    subtitle
+      ? h(Text, {key: 'subtitle', color: 'cyan', dimColor: true}, `   ${subtitle}`)
       : null
+  ]);
+}
+
+function Footer({text}) {
+  return h(Box, {marginTop: 1}, [
+    h(Text, {key: 'f', dimColor: true}, `   ${text}`)
+  ]);
+}
+
+function Frame({title, subtitle, children, footer}) {
+  return h(Box, {flexDirection: 'column', paddingX: 1, paddingTop: 1, paddingBottom: 1}, [
+    h(Header, {key: 'hdr', title, subtitle}),
+    h(Box, {key: 'body', flexDirection: 'column'}, children),
+    footer ? h(Footer, {key: 'ftr', text: footer}) : null
   ]);
 }
 
 function MenuList({items, index}) {
   const start = Math.max(0, index - 5);
   const visible = items.slice(start, start + 10);
+  const hasAbove = start > 0;
+  const hasBelow = start + 10 < items.length;
 
-  return h(
-    Box,
-    {flexDirection: 'column'},
-    visible.map((item, offset) => {
+  return h(Box, {flexDirection: 'column'}, [
+    hasAbove
+      ? h(Text, {key: 'above', dimColor: true}, '   ↑ más elementos arriba')
+      : null,
+    ...visible.map((item, offset) => {
       const actualIndex = start + offset;
       const selected = actualIndex === index;
 
-      return h(Box, {key: item.id ?? `${item.label}-${actualIndex}`, flexDirection: 'column', marginBottom: 1}, [
-        h(
-          Text,
-          {key: 'label', color: selected ? 'green' : 'white', bold: selected},
-          `${selected ? '❯' : ' '} ${item.label}`
-        ),
-        item.description ? h(Text, {key: 'desc', dimColor: true}, `  ${item.description}`) : null
+      return h(Box, {
+        key: item.id ?? `${item.label}-${actualIndex}`,
+        flexDirection: 'column',
+        marginBottom: 1
+      }, [
+        h(Box, {key: 'row', flexDirection: 'row'}, [
+          h(Text, {key: 'arrow', color: 'green', bold: true}, selected ? ' ❯ ' : '   '),
+          h(Text, {
+            key: 'label',
+            color: selected ? 'greenBright' : 'white',
+            bold: selected
+          }, item.label)
+        ]),
+        item.description
+          ? h(Box, {key: 'desc', paddingLeft: 3}, [
+              h(Text, {key: 'dt', dimColor: true}, item.description)
+            ])
+          : null
       ]);
-    })
-  );
-}
-
-function SummaryBox({title, lines}) {
-  return h(Box, {flexDirection: 'column', marginTop: 1, borderStyle: 'round', padding: 1}, [
-    h(Text, {key: 'title', bold: true, color: 'yellow'}, title),
-    ...lines.map((line, index) => h(Text, {key: `${title}-${index}`}, line))
+    }),
+    hasBelow
+      ? h(Text, {key: 'below', dimColor: true}, '   ↓ más elementos abajo')
+      : null
   ]);
 }
+
+function StatusBox({title, lines, color = 'cyan'}) {
+  return h(Box, {
+    flexDirection: 'column',
+    marginTop: 1,
+    borderStyle: 'round',
+    borderColor: color,
+    paddingX: 1
+  }, [
+    h(Text, {key: 'title', bold: true, color: 'yellowBright'}, title),
+    ...lines.map((line, i) => h(Text, {key: `${title}-${i}`, dimColor: true}, line))
+  ]);
+}
+
+function Badge({ok, label}) {
+  return h(Box, {flexDirection: 'row', gap: 1}, [
+    h(Text, {key: 'icon', color: ok ? 'greenBright' : 'redBright', bold: true}, ok ? '✔' : '✖'),
+    h(Text, {key: 'lbl', color: ok ? 'greenBright' : 'redBright', bold: !ok}, label)
+  ]);
+}
+
+// ─── screens ─────────────────────────────────────────────────────────────────
 
 function MainScreen({lastDependencySummary, lastResult, onQuit, onSelect}) {
   const index = useMenuNavigation(mainMenuItems, onSelect, {isActive: true, onQuit});
 
+  const depsOk = lastDependencySummary?.okCount === lastDependencySummary?.total;
+  const depsColor = !lastDependencySummary ? 'cyan' : depsOk ? 'green' : 'yellow';
   const summaryLines = lastDependencySummary
-    ? [`Estado: ${lastDependencySummary.okCount}/${lastDependencySummary.total} checks en verde.`]
-    : ['Todavía no corriste la verificación de dependencias.'];
+    ? [`${lastDependencySummary.okCount}/${lastDependencySummary.total} checks en verde`]
+    : ['Todavía no corriste la verificación.'];
 
+  const resultColor = !lastResult ? 'cyan' : lastResult.success ? 'green' : 'red';
   const resultLines = lastResult
-    ? [`Último resultado: ${lastResult.success ? 'OK' : 'FALLÓ'} — ${lastResult.title}`]
-    : ['Todavía no ejecutaste ninguna acción desde la TUI.'];
+    ? [`${lastResult.success ? '✔' : '✖'} ${lastResult.title}`]
+    : ['Todavía no ejecutaste ninguna acción.'];
 
   return h(Frame, {
     title: appInfo.title,
     subtitle: appInfo.subtitle,
-    footer: '↑/↓ mover · Enter seleccionar · q salir'
+    footer: '↑↓  j k  mover   ⏎ seleccionar   q salir'
   }, [
     h(MenuList, {key: 'menu', items: mainMenuItems, index}),
-    h(SummaryBox, {key: 'deps', title: 'Dependencias', lines: summaryLines}),
-    h(SummaryBox, {key: 'result', title: 'Último resultado', lines: resultLines})
+    h(StatusBox, {key: 'deps', title: 'Dependencias', lines: summaryLines, color: depsColor}),
+    h(StatusBox, {key: 'result', title: 'Último resultado', lines: resultLines, color: resultColor})
   ]);
 }
 
@@ -159,22 +206,36 @@ function DependencyScreen({onBack, onQuit, onRefreshDone}) {
     return h(Frame, {
       title: 'Verificación de dependencias',
       subtitle: 'Chequeando sistema y proyecto...',
-      footer: 'Esc / b volver'
+      footer: 'Esc · b  volver'
     }, [h(Spinner, {key: 'spinner', label: 'Revisando dependencias...'})]);
   }
+
+  const allOk = summary.okCount === summary.total;
 
   return h(Frame, {
     title: 'Verificación de dependencias',
     subtitle: `${summary.okCount}/${summary.total} checks en verde`,
-    footer: '↑/↓ mover · Enter seleccionar · Esc volver'
+    footer: '↑↓  j k  mover   ⏎ seleccionar   Esc · b  volver'
   }, [
-    h(
-      Box,
-      {key: 'status-list', flexDirection: 'column'},
+    h(Box, {
+      key: 'summary-badge',
+      borderStyle: 'round',
+      borderColor: allOk ? 'green' : 'yellow',
+      paddingX: 1,
+      marginBottom: 1
+    }, [
+      h(Text, {bold: true, color: allOk ? 'greenBright' : 'yellowBright'},
+        allOk
+          ? `  ✔  Todo en orden — ${summary.total}/${summary.total} checks OK`
+          : `  ⚠  ${summary.total - summary.okCount} de ${summary.total} checks fallaron`)
+    ]),
+    h(Box, {key: 'status-list', flexDirection: 'column', marginBottom: 1},
       summary.items.map(item =>
         h(Box, {key: item.id, flexDirection: 'column', marginBottom: 1}, [
-          h(Text, {key: 'label', color: item.ok ? 'green' : 'red'}, `${item.ok ? '✔' : '✖'} ${item.label}`),
-          h(Text, {key: 'detail', dimColor: true}, `  ${item.detail}`)
+          h(Badge, {key: 'badge', ok: item.ok, label: item.label}),
+          h(Box, {key: 'detail', paddingLeft: 2}, [
+            h(Text, {key: 'dt', dimColor: true}, item.detail)
+          ])
         ])
       )
     ),
@@ -188,7 +249,7 @@ function InstallScreen({onBack, onQuit, onSelect}) {
   return h(Frame, {
     title: 'Instalar / preparar entorno',
     subtitle: 'Las acciones con apt/rpcbind usan terminal interactiva y pueden pedir sudo.',
-    footer: '↑/↓ mover · Enter seleccionar · Esc volver'
+    footer: '↑↓  j k  mover   ⏎ seleccionar   Esc · b  volver'
   }, [h(MenuList, {key: 'menu', items: installActions, index})]);
 }
 
@@ -198,7 +259,7 @@ function CategoryScreen({onBack, onQuit, onSelect}) {
   return h(Frame, {
     title: 'Ejecutar incisos prácticos',
     subtitle: 'Elegí una familia de ejercicios.',
-    footer: '↑/↓ mover · Enter seleccionar · Esc volver'
+    footer: '↑↓  j k  mover   ⏎ seleccionar   Esc · b  volver'
   }, [h(MenuList, {key: 'menu', items: exerciseCategories, index})]);
 }
 
@@ -210,7 +271,7 @@ function ExerciseScreen({categoryId, onBack, onQuit, onSelect}) {
   return h(Frame, {
     title: category?.label ?? 'Ejercicios',
     subtitle: `${items.length} inciso(s) disponibles`,
-    footer: '↑/↓ mover · Enter seleccionar · Esc volver'
+    footer: '↑↓  j k  mover   ⏎ seleccionar   Esc · b  volver'
   }, [h(MenuList, {key: 'menu', items, index})]);
 }
 
@@ -218,9 +279,11 @@ function ConfirmScreen({title, body, onConfirm, onCancel}) {
   return h(Frame, {
     title,
     subtitle: body,
-    footer: 'ConfirmInput: y/n'
+    footer: 'y confirmar   n cancelar'
   }, [
-    h(Text, {key: 'hint'}, '¿Seguimos?'),
+    h(Box, {key: 'hint', marginBottom: 1}, [
+      h(Text, {color: 'yellowBright', bold: true}, '  ¿Querés continuar?')
+    ]),
     h(ConfirmInput, {key: 'confirm', onConfirm, onCancel})
   ]);
 }
@@ -267,17 +330,21 @@ function PromptScreen({exercise, onBack, onSubmit}) {
     return h(Frame, {
       title: exercise.title,
       subtitle: current.label,
-      footer: '↑/↓ mover · Enter seleccionar · Esc volver'
+      footer: '↑↓  j k  mover   ⏎ seleccionar   Esc · b  volver'
     }, [h(MenuList, {key: 'menu', items: current.options, index})]);
   }
 
   return h(Frame, {
     title: exercise.title,
     subtitle: current.label,
-    footer: current.defaultValue != null ? `Enter vacío = ${current.defaultValue}` : 'Escribí y Enter para enviar'
+    footer: current.defaultValue != null
+      ? `Enter vacío = ${current.defaultValue}`
+      : 'Escribí y Enter para enviar'
   }, [
-    h(Text, {key: 'question'}, current.label),
-    h(TextInput, {key: 'input', placeholder: String(current.defaultValue ?? ''), submit: finishStep})
+    h(Box, {key: 'q', marginBottom: 1}, [
+      h(Text, {color: 'cyanBright'}, `  ${current.label}`)
+    ]),
+    h(TextInput, {key: 'input', placeholder: String(current.defaultValue ?? ''), onSubmit: finishStep})
   ]);
 }
 
@@ -286,7 +353,11 @@ function RunningScreen({label}) {
     title: 'Ejecutando...',
     subtitle: label,
     footer: 'Esperá a que termine la acción.'
-  }, [h(Spinner, {key: 'spinner', label})]);
+  }, [
+    h(Box, {key: 'spinner-wrap', marginTop: 1, paddingX: 1}, [
+      h(Spinner, {key: 'spinner', label})
+    ])
+  ]);
 }
 
 function ResultScreen({result, onBack, onQuit, onRetry}) {
@@ -307,15 +378,35 @@ function ResultScreen({result, onBack, onQuit, onRetry}) {
     {onBack, onQuit}
   );
 
+  const ok = result.success;
+
   return h(Frame, {
     title: result.title,
-    subtitle: result.success ? 'Resultado: OK' : 'Resultado: FALLÓ',
-    footer: '↑/↓ mover · Enter seleccionar · Esc volver'
+    subtitle: ok ? 'Resultado: OK' : 'Resultado: FALLÓ',
+    footer: '↑↓  j k  mover   ⏎ seleccionar   Esc · b  volver'
   }, [
-    h(Text, {key: 'status', color: result.success ? 'green' : 'red'}, result.success ? '✔ Acción completada' : '✖ Acción con error'),
-    h(Box, {key: 'output', flexDirection: 'column', marginTop: 1, borderStyle: 'round', padding: 1}, [
-      h(Text, {key: 'out-title', bold: true, color: 'yellow'}, 'Salida resumida'),
-      ...truncateOutput(result.output).split('\n').map((line, lineIndex) => h(Text, {key: `line-${lineIndex}`}, line))
+    h(Box, {
+      key: 'status-badge',
+      borderStyle: 'round',
+      borderColor: ok ? 'green' : 'red',
+      paddingX: 2,
+      marginBottom: 1
+    }, [
+      h(Text, {key: 'st', bold: true, color: ok ? 'greenBright' : 'redBright'},
+        ok ? '  ✔  Acción completada exitosamente' : '  ✖  La acción falló')
+    ]),
+    h(Box, {
+      key: 'output',
+      flexDirection: 'column',
+      marginBottom: 1,
+      borderStyle: 'round',
+      borderColor: 'blue',
+      paddingX: 1
+    }, [
+      h(Text, {key: 'out-title', bold: true, color: 'cyanBright'}, 'Salida'),
+      ...truncateOutput(result.output).split('\n').map((line, i) =>
+        h(Text, {key: `line-${i}`, dimColor: true}, line)
+      )
     ]),
     h(MenuList, {key: 'actions', items: actions, index})
   ]);
@@ -338,11 +429,28 @@ function AboutScreen({onBack, onQuit}) {
   return h(Frame, {
     title: 'Resumen / ayuda',
     subtitle: 'Alcance real de la TUI',
-    footer: 'Enter / Esc / b volver'
+    footer: '⏎ · Esc · b  volver'
   }, [
-    h(Box, {key: 'content', flexDirection: 'column'}, lines.map((line, index) => h(Text, {key: index}, line)))
+    h(Box, {
+      key: 'content',
+      flexDirection: 'column',
+      borderStyle: 'round',
+      borderColor: 'cyan',
+      paddingX: 1
+    },
+      lines.map((line, i) =>
+        h(Text, {
+          key: i,
+          color: line.startsWith('-') ? undefined : line.startsWith('Qué') ? 'yellowBright' : undefined,
+          bold: line.startsWith('Sistema') || line.startsWith('Qué'),
+          dimColor: line.startsWith('-')
+        }, line || ' ')
+      )
+    )
   ]);
 }
+
+// ─── root ─────────────────────────────────────────────────────────────────────
 
 export function App() {
   const {exit} = useApp();
@@ -359,10 +467,9 @@ export function App() {
 
   const executeInstall = async action => {
     replace({type: 'running', label: action.label});
-    const result =
-      action.mode === 'terminal'
-        ? await runTerminalCommand(action.command, {cwd: action.cwd, setRawMode})
-        : await runCapturedCommand(action.command, {cwd: action.cwd});
+    const result = action.mode === 'terminal'
+      ? await runTerminalCommand(action.command, {cwd: action.cwd, setRawMode})
+      : await runCapturedCommand(action.command, {cwd: action.cwd});
 
     const finalResult = {
       title: action.label,
@@ -408,9 +515,9 @@ export function App() {
       subtitle: 'Modo no interactivo detectado',
       footer: 'Ejecutá esta TUI en una terminal real (TTY).'
     }, [
-      h(Text, {key: 'line-1', color: 'yellow'}, 'Ink no puede activar raw mode en este stdin.'),
-      h(Text, {key: 'line-2'}, 'Eso pasa cuando corrés la app sin TTY, por ejemplo redirigiendo entrada/salida o desde algunos runners automatizados.'),
-      h(Text, {key: 'line-3'}, `Probá en una terminal normal con: cd practicorpc/98-tui-practica && npm start`)
+      h(Text, {key: 'line-1', color: 'yellowBright', bold: true}, '  ⚠  Ink no puede activar raw mode en este stdin.'),
+      h(Text, {key: 'line-2', dimColor: true}, '  Eso pasa al redirigir stdin o correr desde runners automatizados.'),
+      h(Text, {key: 'line-3', dimColor: true}, `  Probá: cd practicorpc/98-tui-practica && npm start`)
     ]);
   }
 
