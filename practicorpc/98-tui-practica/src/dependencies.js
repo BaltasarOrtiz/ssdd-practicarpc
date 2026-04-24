@@ -135,7 +135,7 @@ export const installActions = [
     label: 'Instalar paquetes base Ubuntu/Debian',
     description: 'Instala Java, toolchain RPC, protoc, python venv/pip y Node/npm.',
     mode: 'terminal',
-    command: 'sudo apt update && sudo apt install -y default-jdk nodejs npm rpcbind rpcsvc-proto protobuf-compiler build-essential libtirpc-dev python3 python3-pip python3-venv'
+    command: 'sudo apt update && sudo apt install -y default-jdk nodejs rpcbind rpcsvc-proto protobuf-compiler build-essential libtirpc-dev python3 python3-pip python3-venv'
   },
   {
     id: 'enable-rpcbind',
@@ -181,6 +181,6 @@ export const installActions = [
     description: 'Instala paquetes base, levanta rpcbind, crea .venv, instala npm deps y genera stubs.',
     mode: 'terminal',
     cwd: PROJECT_ROOT,
-    command: 'sudo apt update && sudo apt install -y default-jdk nodejs npm rpcbind rpcsvc-proto protobuf-compiler build-essential libtirpc-dev python3 python3-pip python3-venv && sudo systemctl enable --now rpcbind && python3 -m venv .venv && .venv/bin/python -m pip install --upgrade pip && .venv/bin/python -m pip install protobuf grpcio grpcio-tools rpyc && (cd practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/node-client && npm install) && .venv/bin/python -m grpc_tools.protoc -I./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/protos --python_out=./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/python-server/generated --grpc_python_out=./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/python-server/generated ./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/protos/calculator.proto && .venv/bin/python -m grpc_tools.protoc -I./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/protos --python_out=./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/python-server/generated --grpc_python_out=./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/python-server/generated ./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/protos/season.proto'
+    command: 'sudo apt update && sudo apt install -y default-jdk nodejs rpcbind rpcsvc-proto protobuf-compiler build-essential libtirpc-dev python3 python3-pip python3-venv && sudo systemctl enable --now rpcbind && python3 -m venv .venv && .venv/bin/python -m pip install --upgrade pip && .venv/bin/python -m pip install protobuf grpcio grpcio-tools rpyc && (cd practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/node-client && npm install) && .venv/bin/python -m grpc_tools.protoc -I./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/protos --python_out=./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/python-server/generated --grpc_python_out=./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/python-server/generated ./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/protos/calculator.proto && .venv/bin/python -m grpc_tools.protoc -I./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/protos --python_out=./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/python-server/generated --grpc_python_out=./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/python-server/generated ./practicorpc/05-grpc/02-java-rmi-b-y-d-en-grpc/protos/season.proto'
   }
 ];
