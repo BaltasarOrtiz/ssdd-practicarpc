@@ -1,4 +1,5 @@
 import socket
+import sys
 
 
 HOST = "127.0.0.1"
@@ -6,7 +7,10 @@ PORT = 5000
 
 
 def main() -> None:
-    raw_number = input("Ingresá un número entero: ").strip()
+    if sys.stdin.isatty():
+        sys.stdout.write("Ingresá un número entero: ")
+        sys.stdout.flush()
+    raw_number = sys.stdin.readline().strip()
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
         client.connect((HOST, PORT))

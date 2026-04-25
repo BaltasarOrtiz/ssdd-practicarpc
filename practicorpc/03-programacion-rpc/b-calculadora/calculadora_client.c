@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "calculadora_rpc.h"
 
 static int invocar_operacion(CLIENT *clnt, int opcion, operandos args) {
@@ -47,12 +48,12 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    printf("Operación (1=suma, 2=resta, 3=divide, 4=multiplica): ");
+    if (isatty(STDIN_FILENO)) printf("Operación (1=suma, 2=resta, 3=divide, 4=multiplica): ");
     scanf("%d", &opcion);
 
-    printf("Operando 1: ");
+    if (isatty(STDIN_FILENO)) printf("Operando 1: ");
     scanf("%d", &args.op1);
-    printf("Operando 2: ");
+    if (isatty(STDIN_FILENO)) printf("Operando 2: ");
     scanf("%d", &args.op2);
 
     printf("Resultado: %d\n", invocar_operacion(clnt, opcion, args));

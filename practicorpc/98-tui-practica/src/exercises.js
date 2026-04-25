@@ -333,11 +333,25 @@ export const exercises = [
         return prep;
       }
 
-      return runSimpleCommand(
-        'Java RMI cliente remoto',
+      const opNames = {'1': 'suma', '2': 'resta', '3': 'divide', '4': 'multiplica'};
+      const opLabel = opNames[values.operation] ?? values.operation;
+
+      const result = await runCapturedCommand(
         `${buildPrintf([values.operation, String(values.op1), String(values.op2)])} | java -cp out ar.edu.ssdd.rmi.calculadora.CalculatorClient ${shEscape(values.host)}`,
-        paths.rmiCalc
+        {cwd: paths.rmiCalc}
       );
+
+      const resultLine = result.output.split('\n').find(l => l.startsWith('Resultado:')) ?? result.output.trim();
+
+      return {
+        success: result.success,
+        output: [
+          `## Java RMI cliente remoto`,
+          `Servidor : ${values.host}`,
+          `Operación: ${opLabel}(${values.op1}, ${values.op2})`,
+          `${resultLine || '(sin respuesta)'}`
+        ].join('\n')
+      };
     }
   },
   {

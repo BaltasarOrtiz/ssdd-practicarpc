@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "paridad_rpc.h"
 
 int main(int argc, char *argv[]) {
@@ -18,7 +19,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    printf("Ingresá un número: ");
+    if (isatty(STDIN_FILENO)) printf("Ingresá un número: ");
     scanf("%d", &numero);
 
     resultado = es_par_impar_1(&numero, clnt);

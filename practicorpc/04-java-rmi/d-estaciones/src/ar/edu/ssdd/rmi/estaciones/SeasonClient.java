@@ -9,12 +9,13 @@ public class SeasonClient {
         SeasonService service = (SeasonService) Naming.lookup("rmi://" + host + "/SeasonService");
 
         try (Scanner scanner = new Scanner(System.in)) {
-            System.out.print("Día: ");
+            boolean tty = System.console() != null;
+            if (tty) System.out.print("Día: ");
             int dia = scanner.nextInt();
-            System.out.print("Mes: ");
+            if (tty) System.out.print("Mes: ");
             int mes = scanner.nextInt();
 
-            System.out.println("Respuesta del servidor: Hola " + service.estacion(dia, mes));
+            System.out.println("Respuesta del servidor: " + service.estacion(dia, mes));
         }
     }
 }

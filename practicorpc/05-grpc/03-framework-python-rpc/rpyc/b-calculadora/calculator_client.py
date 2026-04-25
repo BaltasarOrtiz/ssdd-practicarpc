@@ -1,10 +1,18 @@
 import rpyc
+import sys
+
+
+def _read(prompt: str) -> str:
+    if sys.stdin.isatty():
+        sys.stdout.write(prompt)
+        sys.stdout.flush()
+    return sys.stdin.readline().strip()
 
 
 def main() -> None:
-    opcion = input("Operación (suma, resta, divide, multiplica): ").strip().lower()
-    op1 = int(input("Operando 1: "))
-    op2 = int(input("Operando 2: "))
+    opcion = _read("Operación (suma, resta, divide, multiplica): ").lower()
+    op1 = int(_read("Operando 1: "))
+    op2 = int(_read("Operando 2: "))
 
     connection = rpyc.connect("localhost", 18862)
     try:

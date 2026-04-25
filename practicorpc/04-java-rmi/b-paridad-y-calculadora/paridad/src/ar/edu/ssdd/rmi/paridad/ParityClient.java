@@ -9,7 +9,8 @@ public class ParityClient {
         ParityService service = (ParityService) Naming.lookup("rmi://" + host + "/ParityService");
 
         try (Scanner scanner = new Scanner(System.in)) {
-            System.out.print("Ingresá un número: ");
+            boolean tty = System.console() != null;
+            if (tty) System.out.print("Ingresá un número: ");
             int numero = scanner.nextInt();
             System.out.println("Resultado: " + service.esParOImpar(numero));
         }

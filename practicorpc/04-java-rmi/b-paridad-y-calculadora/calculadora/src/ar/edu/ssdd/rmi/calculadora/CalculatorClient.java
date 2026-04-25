@@ -9,13 +9,14 @@ public class CalculatorClient {
         CalculatorService service = (CalculatorService) Naming.lookup("rmi://" + host + "/CalculatorService");
 
         try (Scanner scanner = new Scanner(System.in)) {
-            System.out.print("Operación (1=suma, 2=resta, 3=divide, 4=multiplica): ");
+            boolean tty = System.console() != null;
+            if (tty) System.out.print("Operación (1=suma, 2=resta, 3=divide, 4=multiplica): ");
             int option = scanner.nextInt();
 
-            System.out.print("Operando 1: ");
+            if (tty) System.out.print("Operando 1: ");
             int op1 = scanner.nextInt();
 
-            System.out.print("Operando 2: ");
+            if (tty) System.out.print("Operando 2: ");
             int op2 = scanner.nextInt();
 
             int result = switch (option) {
