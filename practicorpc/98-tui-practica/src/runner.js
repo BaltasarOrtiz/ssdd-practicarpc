@@ -6,7 +6,7 @@ function mergeEnv(extraEnv = {}) {
 }
 
 function spawnBash(command, {cwd, env = {}, detached = false, stdio = ['ignore', 'pipe', 'pipe']} = {}) {
-  return spawn('bash', ['-lc', command], {
+  return spawn('bash', ['-c', command], {
     cwd,
     env: mergeEnv(env),
     detached,
@@ -77,10 +77,30 @@ export async function runTerminalCommand(command, {cwd, env = {}, setRawMode} = 
   // Without this, Node.js and the child compete for fd 0 and sudo can't read passwords.
   process.stdin.pause();
 
+  let child;
+  let settled = false;
+
+  const sigintHandler = () => {
+    if (settled || !child) {
+      return;
+    }
+
+    try {
+      process.kill(-child.pid, 'SIGINT');
+    } catch {
+      try {
+        child.kill('SIGINT');
+      } catch {
+        // no-op
+      }
+    }
+  };
+
+  process.on('SIGINT', sigintHandler);
+
   try {
     return await new Promise(resolve => {
-      const child = spawnBash(command, {cwd, env, stdio: 'inherit'});
-      let settled = false;
+      child = spawnBash(command, {cwd, env, stdio: 'inherit'});
 
       child.on('error', error => {
         if (settled) {
@@ -101,11 +121,14 @@ export async function runTerminalCommand(command, {cwd, env = {}, setRawMode} = 
           success: code === 0,
           code: code ?? -1,
           signal,
-          output: 'La orden se ejecutó usando la terminal interactiva.'
+          output: signal
+            ? `La orden fue interrumpida (${signal}).`
+            : 'La orden se ejecutó usando la terminal interactiva.'
         });
       });
     });
   } finally {
+    process.removeListener('SIGINT', sigintHandler);
     process.stdin.resume();
     if (typeof setRawMode === 'function') {
       setRawMode(true);

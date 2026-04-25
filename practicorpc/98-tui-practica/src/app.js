@@ -25,12 +25,12 @@ function useMenuNavigation(items, onSelect, {onBack, onQuit, isActive = true} = 
       }
 
       if (key.upArrow || input === 'k') {
-        setIndex(current => (current - 1 + items.length) % items.length);
+        setIndex(current => Math.max(0, current - 1));
         return;
       }
 
       if (key.downArrow || input === 'j') {
-        setIndex(current => (current + 1) % items.length);
+        setIndex(current => Math.min(items.length - 1, current + 1));
         return;
       }
 
@@ -93,8 +93,9 @@ function MenuList({items, index}) {
       const actualIndex = start + offset;
       const selected = actualIndex === index;
 
+      const label = item.label ?? item.title ?? String(item.id ?? actualIndex);
       return h(Box, {
-        key: item.id ?? `${item.label}-${actualIndex}`,
+        key: item.id ?? `${label}-${actualIndex}`,
         flexDirection: 'column',
         marginBottom: 1
       }, [
@@ -104,7 +105,7 @@ function MenuList({items, index}) {
             key: 'label',
             color: selected ? 'greenBright' : 'white',
             bold: selected
-          }, item.label)
+          }, label)
         ]),
         item.description
           ? h(Box, {key: 'desc', paddingLeft: 3}, [
@@ -264,8 +265,8 @@ function CategoryScreen({onBack, onQuit, onSelect}) {
 }
 
 function ExerciseScreen({categoryId, onBack, onQuit, onSelect}) {
-  const items = listExercisesByCategory(categoryId);
-  const category = exerciseCategories.find(item => item.id === categoryId);
+  const items = useMemo(() => listExercisesByCategory(categoryId), [categoryId]);
+  const category = useMemo(() => exerciseCategories.find(item => item.id === categoryId), [categoryId]);
   const index = useMenuNavigation(items, onSelect, {onBack, onQuit});
 
   return h(Frame, {
@@ -294,7 +295,17 @@ function PromptScreen({exercise, onBack, onSubmit}) {
   const [values, setValues] = useState({});
   const current = prompts[stepIndex];
 
-  const finishStep = rawValue => {
+  const isSelect = current?.type === 'select';
+  const selectOptions = useMemo(() => isSelect ? current.options : [], [current]);
+
+  // Hook must be called unconditionally — active only when the current prompt is a select
+  const selectIndex = useMenuNavigation(
+    selectOptions,
+    option => finishStep(option.value),
+    {onBack, isActive: isSelect}
+  );
+
+  function finishStep(rawValue) {
     let value = rawValue;
 
     if ((value === '' || value == null) && current.defaultValue != null) {
@@ -318,20 +329,19 @@ function PromptScreen({exercise, onBack, onSubmit}) {
     } catch (error) {
       onSubmit({__error: error.message});
     }
-  };
+  }
 
   if (!current) {
     onSubmit(values);
     return null;
   }
 
-  if (current.type === 'select') {
-    const index = useMenuNavigation(current.options, option => finishStep(option.value), {onBack});
+  if (isSelect) {
     return h(Frame, {
       title: exercise.title,
       subtitle: current.label,
       footer: '↑↓  j k  mover   ⏎ seleccionar   Esc · b  volver'
-    }, [h(MenuList, {key: 'menu', items: current.options, index})]);
+    }, [h(MenuList, {key: 'menu', items: current.options, index: selectIndex})]);
   }
 
   return h(Frame, {
@@ -377,10 +387,10 @@ function TerminalRunningScreen({label}) {
 }
 
 function ResultScreen({result, onBack, onQuit, onRetry}) {
-  const actions = [
+  const actions = useMemo(() => [
     {id: 'retry', label: 'Repetir', description: 'Vuelve a ejecutar la misma acción.'},
     {id: 'back', label: 'Volver', description: 'Regresa a la pantalla anterior.'}
-  ];
+  ], []);
   const index = useMenuNavigation(
     actions,
     item => {
@@ -487,8 +497,8 @@ export function App() {
       label: action.label
     });
     const result = action.mode === 'terminal'
-      ? await runTerminalCommand(action.command, {cwd: action.cwd, setRawMode})
-      : await runCapturedCommand(action.command, {cwd: action.cwd});
+      ? await runTerminalCommand(action.command, {cwd: action.cwd, env: action.env ?? {}, setRawMode})
+      : await runCapturedCommand(action.command, {cwd: action.cwd, env: action.env ?? {}});
 
     const finalResult = {
       title: action.label,
