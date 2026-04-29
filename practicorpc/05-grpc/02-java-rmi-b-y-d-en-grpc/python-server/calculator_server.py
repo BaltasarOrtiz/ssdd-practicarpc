@@ -8,18 +8,26 @@ from generated import calculator_pb2_grpc
 
 class CalculatorService(calculator_pb2_grpc.CalculatorServiceServicer):
     def Sum(self, request, context):
-        return calculator_pb2.BinaryOperationResponse(result=request.op1 + request.op2)
+        result = request.op1 + request.op2
+        print(f"Sum({request.op1}, {request.op2}) = {result}", flush=True)
+        return calculator_pb2.BinaryOperationResponse(result=result)
 
     def Subtract(self, request, context):
-        return calculator_pb2.BinaryOperationResponse(result=request.op1 - request.op2)
+        result = request.op1 - request.op2
+        print(f"Subtract({request.op1}, {request.op2}) = {result}", flush=True)
+        return calculator_pb2.BinaryOperationResponse(result=result)
 
     def Divide(self, request, context):
         if request.op2 == 0:
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, "No se puede dividir por cero")
-        return calculator_pb2.BinaryOperationResponse(result=request.op1 // request.op2)
+        result = request.op1 // request.op2
+        print(f"Divide({request.op1}, {request.op2}) = {result}", flush=True)
+        return calculator_pb2.BinaryOperationResponse(result=result)
 
     def Multiply(self, request, context):
-        return calculator_pb2.BinaryOperationResponse(result=request.op1 * request.op2)
+        result = request.op1 * request.op2
+        print(f"Multiply({request.op1}, {request.op2}) = {result}", flush=True)
+        return calculator_pb2.BinaryOperationResponse(result=result)
 
 
 def serve():

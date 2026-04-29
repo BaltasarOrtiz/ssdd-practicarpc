@@ -19,6 +19,7 @@ class SeasonService(season_pb2_grpc.SeasonServiceServicer):
         else:
             season = "Primavera"
 
+        print(f"GetSeason(day={request.day}, month={request.month}) = {season}", flush=True)
         return season_pb2.SeasonResponse(season=season, message=f"Hola {season}")
 
 
