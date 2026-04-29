@@ -27,7 +27,7 @@ def serve():
     calculator_pb2_grpc.add_CalculatorServiceServicer_to_server(CalculatorService(), server)
     server.add_insecure_port("[::]:50051")
     server.start()
-    print("CalculatorService gRPC escuchando en puerto 50051")
+    print("CalculatorService gRPC escuchando en puerto 50051", flush=True)
     server.wait_for_termination()
 
 

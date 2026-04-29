@@ -27,7 +27,7 @@ def serve():
     season_pb2_grpc.add_SeasonServiceServicer_to_server(SeasonService(), server)
     server.add_insecure_port("[::]:50052")
     server.start()
-    print("SeasonService gRPC escuchando en puerto 50052")
+    print("SeasonService gRPC escuchando en puerto 50052", flush=True)
     server.wait_for_termination()
 
 
